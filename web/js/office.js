@@ -503,6 +503,8 @@ function displayPanel(id) {
   panelInteractionVersion++;
   if (opened === "sheet-tasks" && id !== "sheet-tasks")
     window.officeTaskRunner?.close();
+  if (opened === "sheet-agents" && id !== "sheet-agents")
+    window.officeAgents?.close();
   for (const panel of document.querySelectorAll(".sheet"))
     panel.hidden = panel.id !== id;
   opened = id;
@@ -515,6 +517,7 @@ function displayPanel(id) {
   if (id === "sheet-events" && eventMode === "history" && !historyLoaded)
     pendingHistoryScroll = view?.scroll || 0;
   refreshPanel();
+  if (id === "sheet-agents") window.officeAgents?.open();
   const target =
     view?.focus?.isConnected &&
     panel.contains(view.focus) &&
@@ -531,6 +534,7 @@ function closeSheets() {
   panelInteractionVersion++;
   rememberPanel();
   if (opened === "sheet-tasks") window.officeTaskRunner?.close();
+  if (opened === "sheet-agents") window.officeAgents?.close();
   for (const panel of document.querySelectorAll(".sheet")) panel.hidden = true;
   $("backdrop").hidden = true;
   $("wrap").inert = false;
@@ -1675,6 +1679,9 @@ $("inspector-copy").onclick = async () => {
 $("inspector-customize").onclick = () => {
   if (!agents.some((agent) => agent.id === focusedId)) return;
   $("agent-name-input").focus();
+};
+$("inspector-agent-chat").onclick = () => {
+  openSheet("sheet-agents");
 };
 function syncAgentFollow() {
   const button = $("agent-follow"),

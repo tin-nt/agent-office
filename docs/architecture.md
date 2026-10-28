@@ -25,6 +25,13 @@ not write synthetic observations or mark source task lists complete. The
 ordinary startup command, Hermes observer, and public static preview keep
 execution disabled. See [the runner contract](local-task-runner.md).
 
+The separate `--enable-opencode-agents` option adds a control plane for new
+OpenCode sessions: **Agent chat → same-origin HTTP → OpenCode V2 API**. It
+requires allowlisted project roots, binds one session to one project, and can
+send continuation prompts until an operator stop rule or token budget fires.
+The observer remains observation-only, and the OpenCode password never leaves
+the Python process. See [the managed agent contract](opencode-agents.md).
+
 ## Components
 
 | Component | Responsibility |
@@ -36,6 +43,8 @@ execution disabled. See [the runner contract](local-task-runner.md).
 | [`state_model.py`](../state_model.py) | Incremental sessions, concurrent tools, pending input, and lifecycle transitions |
 | [`tasks.py`](../tasks.py) | Bounded source task snapshots and capture replay memory, independent of lifecycle and XP |
 | [`task_runner.py`](../task_runner.py) | Optional fixed CLI adapters, validated project admission, process lifecycle, and bounded output |
+| [`opencode_api.py`](../opencode_api.py) | Loopback-only OpenCode V2 client, service discovery, Basic auth, and no-proxy/no-redirect transport |
+| [`opencode_agents.py`](../opencode_agents.py) | Optional project-bound session control, continuous loop, budget accounting, and permission/form replies |
 | [`settings_store.py`](../settings_store.py) | Revisioned settings reads, conditional atomic writes, and preservation of unavailable files |
 | [`progress.py`](../progress.py) | XP, the active achievement catalog, runtime aliases, and retired-record cleanup |
 | [`usage.py`](../usage.py) | Stable usage identities, replacement corrections, coverage, and materialized aggregates |
@@ -44,6 +53,7 @@ execution disabled. See [the runner contract](local-task-runner.md).
 | [`web/js/office.js`](../web/js/office.js), [`editor.js`](../web/js/editor.js) | Polling, panels, settings reconciliation, and transactional furniture editing |
 | [`web/js/tasks-view.js`](../web/js/tasks-view.js) | Read-only source task lists, provenance, and focus-preserving reconciliation |
 | [`web/js/task-runner.js`](../web/js/task-runner.js) | Local run form, idempotent submission, captured output, and cancellation |
+| [`web/js/agents.js`](../web/js/agents.js) | Managed agent roster, chat transcript, goal/budget controls, and permission/form replies |
 | [`web/js/data.js`](../web/js/data.js), [`scene.js`](../web/js/scene.js) | Shared geometry, assets, camera, movement, drawing, and hit testing |
 | [`web/js/aquarium.js`](../web/js/aquarium.js), [`jukebox.js`](../web/js/jukebox.js) | Optional fish simulation and gesture-started local music |
 | [`web/js/room.js`](../web/js/room.js), [`arcade.js`](../web/js/arcade.js) | Object actions, persistent light switches, and the arcade game lifecycle |

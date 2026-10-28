@@ -175,6 +175,29 @@ OpenCode uses a fresh private server (requires 2.0.29+). Refresh CLI discovery
 without losing the prompt, search/filter retained runs, and download a selected
 run with its prompt and output before restarting the server.
 
+## Manage OpenCode agents
+
+This is optional and separate from the observer. To create and chat with
+managed OpenCode sessions in allowlisted projects:
+
+```sh
+python3 run.py --enable-opencode-agents --project-root "/absolute/path/to/projects"
+```
+
+Open **Agent chat**. Each managed agent is bound to one project and one
+OpenCode session; only one managed agent can be active in a project at a time.
+The default **continuous** mode keeps working until `/goal`, the token budget,
+a turn/time limit, a permission or form, or a restart. **Goal mode** can stop
+automatically when the agent ends its final message with
+`GOAL_COMPLETE: <evidence>`.
+
+The panel shows the transcript, tool calls, permissions, forms, token usage,
+and pause/resume controls. Normal chat pauses the loop; use `/goal resume` to
+continue. Project commands such as `/engage.recon` are forwarded when available.
+The OpenCode password never reaches the browser, and transcripts are not stored
+by Agent Office. Read the [managed agent contract](docs/opencode-agents.md)
+before enabling it.
+
 ## Usage, privacy, and local data
 
 **Missing usage is “Not reported,” not zero.** Cost is a runtime estimate in USD,

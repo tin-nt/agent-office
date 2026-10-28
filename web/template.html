@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="css/aquarium.css" />
     <link rel="stylesheet" href="css/arcade.css" />
     <link rel="stylesheet" href="css/task-runner.css" />
+    <link rel="stylesheet" href="css/agents.css" />
     <link rel="stylesheet" href="css/quick-nav.css" />
     <link rel="stylesheet" href="css/prompt-library.css" />
     <link rel="stylesheet" href="css/studio.css" />
@@ -79,6 +80,14 @@
             aria-expanded="false"
           >
             Tasks
+          </button>
+          <button
+            class="btn"
+            id="agentsbtn"
+            data-sheet="sheet-agents"
+            aria-expanded="false"
+          >
+            Agent chat
           </button>
           <button
             class="btn"
@@ -592,6 +601,275 @@
     </section>
     <section
       class="sheet"
+      id="sheet-agents"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Managed agents"
+      hidden
+    >
+      <h2>Managed agents</h2>
+      <p class="h">
+        Opt-in OpenCode control plane. Each managed agent owns one session in
+        one allowlisted project. Chat here, answer permissions and forms, or
+        let the loop continue until <code>/goal</code>, the token budget, or a
+        stop limit. Transcripts stay in OpenCode; this panel stores only
+        bindings and loop counters.
+      </p>
+      <div id="agents-enable" class="agents-enable" hidden>
+        <strong>Enable managed agents when starting Agent Office</strong>
+        <code
+          >python3 run.py --enable-opencode-agents --project-root
+          /absolute/path/to/projects</code
+        >
+      </div>
+      <div class="agents-toolbar">
+        <button id="agents-refresh" class="btn" type="button" disabled>
+          Refresh
+        </button>
+        <button id="agents-reconnect" class="btn" type="button" disabled>
+          Reconnect OpenCode
+        </button>
+        <button
+          id="agents-new"
+          class="btn"
+          type="button"
+          aria-expanded="false"
+          disabled
+        >
+          New agent
+        </button>
+        <span
+          id="agents-status"
+          class="h"
+          role="status"
+          aria-live="polite"
+        ></span>
+      </div>
+      <div class="agents-layout">
+        <aside class="agents-roster" aria-label="Managed agent roster">
+          <div id="agents-list" class="agents-list"></div>
+          <p id="agents-list-empty" class="h">No managed agents yet.</p>
+        </aside>
+        <section
+          id="agents-detail"
+          class="agents-detail"
+          aria-label="Agent conversation"
+        >
+          <p id="agents-empty" class="h">
+            Select a managed agent to open its conversation.
+          </p>
+          <div id="agents-view" hidden>
+            <header class="agents-head">
+              <div>
+                <h3 id="agents-title"></h3>
+                <p id="agents-meta" class="h"></p>
+              </div>
+              <span id="agents-state" class="agents-state"></span>
+            </header>
+            <p id="agents-error" class="agents-error" role="status" hidden></p>
+            <div class="agents-actions">
+              <button id="agents-pause" class="btn" type="button">
+                Pause
+              </button>
+              <button id="agents-resume" class="btn" type="button">
+                Resume
+              </button>
+              <button id="agents-stop" class="btn" type="button">Stop</button>
+              <button id="agents-complete" class="btn" type="button">
+                Mark complete
+              </button>
+              <button id="agents-unbind" class="btn" type="button">
+                Unbind
+              </button>
+            </div>
+            <div class="agents-meter">
+              <div class="agents-meter-row">
+                <span>Token budget</span><b id="agents-tokens"></b>
+              </div>
+              <progress id="agents-budget" max="1" value="0"></progress>
+              <div class="agents-meter-row">
+                <span id="agents-turns"></span><span id="agents-elapsed"></span>
+              </div>
+            </div>
+            <section class="agents-goal" aria-labelledby="agents-goal-label">
+              <label for="agents-goal-text" class="setting-label" id="agents-goal-label"
+                >Objective</label
+              >
+              <textarea
+                id="agents-goal-text"
+                class="txt"
+                rows="3"
+                maxlength="4000"
+                spellcheck="true"
+              ></textarea>
+              <div class="agents-goal-row">
+                <label
+                  >Mode
+                  <select id="agents-mode" class="txt">
+                    <option value="continuous">Continuous</option>
+                    <option value="goal">Goal</option>
+                  </select></label
+                >
+                <label
+                  >Completion
+                  <select id="agents-completion" class="txt">
+                    <option value="manual">Manual</option>
+                    <option value="marker">Marker</option>
+                  </select></label
+                >
+                <button id="agents-goal-save" class="btn" type="button">
+                  Save &amp; resume
+                </button>
+              </div>
+            </section>
+            <section id="agents-pending" class="agents-pending" hidden>
+              <h3>Waiting for your answer</h3>
+              <div id="agents-permissions"></div>
+              <div id="agents-forms"></div>
+            </section>
+            <section class="agents-chat" aria-labelledby="agents-chat-heading">
+              <div class="agents-chat-head">
+                <h3 id="agents-chat-heading">Conversation</h3>
+                <span id="agents-chat-status" class="h"></span>
+              </div>
+              <div
+                id="agents-transcript"
+                class="agents-transcript"
+                role="log"
+                aria-live="polite"
+              ></div>
+              <form id="agents-compose" class="agents-compose">
+                <label for="agents-prompt" class="sr-only">Message</label>
+                <textarea
+                  id="agents-prompt"
+                  class="txt"
+                  rows="3"
+                  maxlength="8192"
+                  spellcheck="true"
+                  placeholder="Message the agent, or use /goal, /goal pause, /goal resume, /budget, /status…"
+                  aria-describedby="agents-compose-status"
+                ></textarea>
+                <div class="agents-compose-row">
+                  <select
+                    id="agents-command"
+                    class="txt"
+                    aria-label="Insert project command"
+                  >
+                    <option value="">Insert project command…</option>
+                  </select>
+                  <button id="agents-send" class="btn" type="submit">
+                    Send
+                  </button>
+                </div>
+                <p id="agents-compose-status" class="h" role="status"></p>
+              </form>
+            </section>
+          </div>
+        </section>
+      </div>
+      <form id="agents-new-form" class="agents-new" hidden>
+        <h3>New managed agent</h3>
+        <p class="h">
+          One active managed agent per project. The agent starts in a new
+          OpenCode session after you confirm the objective and limits.
+        </p>
+        <div class="agents-new-grid">
+          <label class="setting-label agents-span-2" for="agents-new-project"
+            >Project</label
+          >
+          <select id="agents-new-project" class="txt agents-span-2"></select>
+          <label class="setting-label" for="agents-new-agent">Agent</label>
+          <label class="setting-label" for="agents-new-model">Model</label>
+          <select id="agents-new-agent" class="txt"></select>
+          <select id="agents-new-model" class="txt"></select>
+          <label class="setting-label agents-span-2" for="agents-new-title"
+            >Title (optional)</label
+          >
+          <input
+            id="agents-new-title"
+            class="txt agents-span-2"
+            maxlength="200"
+            autocomplete="off"
+          />
+          <label class="setting-label agents-span-2" for="agents-new-goal"
+            >Objective</label
+          >
+          <textarea
+            id="agents-new-goal"
+            class="txt agents-span-2"
+            rows="5"
+            maxlength="4000"
+            spellcheck="true"
+            placeholder="Describe the concrete outcome and how the agent should verify it."
+          ></textarea>
+          <label class="setting-label" for="agents-new-mode">Mode</label>
+          <label class="setting-label" for="agents-new-completion"
+            >Completion</label
+          >
+          <select id="agents-new-mode" class="txt">
+            <option value="continuous">Continuous until /goal</option>
+            <option value="goal">Goal mode</option>
+          </select>
+          <select id="agents-new-completion" class="txt">
+            <option value="manual">Manual /goal</option>
+            <option value="marker">Completion marker</option>
+          </select>
+          <div class="agents-number-row agents-span-2">
+            <label
+              >Token budget
+              <input
+                id="agents-new-tokens"
+                class="txt"
+                type="number"
+                min="1"
+                max="100000000"
+                step="1000"
+                value="2000000"
+              />
+            </label>
+            <label
+              >Max turns
+              <input
+                id="agents-new-turns"
+                class="txt"
+                type="number"
+                min="0"
+                max="10000"
+                step="1"
+                value="100"
+              />
+            </label>
+            <label
+              >Max hours
+              <input
+                id="agents-new-hours"
+                class="txt"
+                type="number"
+                min="0"
+                max="168"
+                step="1"
+                value="8"
+              />
+            </label>
+          </div>
+          <label class="agents-check agents-span-2">
+            <input id="agents-new-start" type="checkbox" checked />
+            Start the loop immediately
+          </label>
+        </div>
+        <div class="agents-new-actions">
+          <button id="agents-new-submit" class="btn" type="submit">
+            Create agent
+          </button>
+          <button id="agents-new-cancel" class="btn" type="button">
+            Cancel
+          </button>
+        </div>
+        <p id="agents-new-status" class="h" role="status"></p>
+      </form>
+    </section>
+    <section
+      class="sheet"
       id="sheet-events"
       role="dialog"
       aria-modal="true"
@@ -959,6 +1237,9 @@
           aria-label="View saved activity"
         >
           Saved activity
+        </button>
+        <button class="btn" id="inspector-agent-chat" type="button">
+          Agent chat
         </button>
         <button
           class="btn"
@@ -1431,6 +1712,7 @@
     <script src="js/view-state.js"></script>
     <script src="js/tasks-view.js"></script>
     <script src="js/task-runner.js"></script>
+    <script src="js/agents.js"></script>
     <script src="js/attention.js"></script>
     <script src="js/office.js"></script>
     <script src="js/task-desk.js"></script>

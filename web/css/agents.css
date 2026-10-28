@@ -1,0 +1,521 @@
+/* Opt-in OpenCode agent control plane. */
+.agents {
+  min-width: 0;
+  container-type: inline-size;
+}
+
+#sheet-agents.agents-active {
+  width: min(1100px, calc(100% - 36px));
+}
+
+.agents-enable {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.agents-enable code {
+  display: block;
+  margin-top: 0.5rem;
+  padding: 0.65rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.agents-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.agents-toolbar .h {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.agents-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.agents-roster,
+.agents-detail,
+.agents-new {
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.agents-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: min(58vh, 40rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.agents-card {
+  width: 100%;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.agents-card[aria-pressed="true"] {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.agents-card strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.agents-card small {
+  color: var(--dim);
+}
+
+.agents-state {
+  flex: none;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.agents-state[data-state="running"],
+.agents-state[data-state="starting"] {
+  color: var(--ok);
+}
+.agents-state[data-state="waiting_input"] {
+  color: var(--gold);
+}
+.agents-state[data-state="paused"],
+.agents-state[data-state="stopped"] {
+  color: var(--dim);
+}
+.agents-state[data-state="complete"] {
+  color: var(--ok);
+}
+.agents-state[data-state="error"],
+.agents-state[data-state="budget_exhausted"],
+.agents-state[data-state="limit_reached"] {
+  color: var(--danger);
+}
+
+.agents-detail {
+  min-height: 18rem;
+}
+
+.agents-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.agents-head h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.agents-head .h {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.agents-error {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.agents-actions,
+.agents-goal-row,
+.agents-compose-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.6rem;
+}
+
+.agents-actions {
+  margin-bottom: 0.8rem;
+}
+
+.agents-meter {
+  margin-bottom: 0.9rem;
+}
+
+.agents-meter-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.agents-meter progress {
+  width: 100%;
+  height: 0.55rem;
+  accent-color: var(--gold);
+}
+
+.agents-goal {
+  margin-bottom: 0.9rem;
+}
+
+.agents-goal textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.agents-goal-row {
+  margin-top: 0.4rem;
+}
+
+.agents-goal-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.agents-goal-row select {
+  width: auto;
+  max-width: 100%;
+}
+
+.agents-pending {
+  margin-bottom: 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+
+.agents-pending h3 {
+  margin-top: 0;
+}
+
+.agents-permission,
+.agents-form {
+  margin-bottom: 0.7rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.agents-permission:last-child,
+.agents-form:last-child {
+  margin-bottom: 0;
+}
+
+.agents-permission p,
+.agents-form p {
+  margin: 0.2rem 0;
+  overflow-wrap: anywhere;
+}
+
+.agents-permission ul {
+  margin: 0.3rem 0;
+  padding-left: 1.2rem;
+  overflow-wrap: anywhere;
+}
+
+.agents-form-fields {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.6rem 0;
+}
+
+.agents-form-field {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.agents-form-field label {
+  font-weight: 700;
+}
+
+.agents-form-field .h {
+  margin: 0;
+}
+
+.agents-form-field input[type="text"],
+.agents-form-field input[type="number"],
+.agents-form-field select,
+.agents-form-field textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.agents-form-multiselect {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.8rem;
+}
+
+.agents-form-multiselect label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 400;
+}
+
+.agents-chat {
+  min-width: 0;
+}
+
+.agents-chat-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.agents-chat-head h3 {
+  margin: 0 0 0.4rem;
+}
+
+.agents-transcript {
+  max-height: min(42vh, 30rem);
+  min-height: 9rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.agents-message {
+  margin-bottom: 0.7rem;
+  padding: 0.55rem 0.65rem;
+  border-left: 3px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.agents-message:last-child {
+  margin-bottom: 0;
+}
+
+.agents-message[data-role="user"] {
+  border-left-color: var(--gold);
+}
+
+.agents-message[data-role="assistant"] {
+  border-left-color: var(--ok);
+}
+
+.agents-message[data-role="office"] {
+  border-left-color: var(--dim);
+  color: var(--dim);
+  font-style: italic;
+}
+
+.agents-message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+
+.agents-message-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agents-reasoning {
+  margin-top: 0.4rem;
+}
+
+.agents-reasoning summary {
+  cursor: pointer;
+  color: var(--dim);
+  font-size: 0.8rem;
+}
+
+.agents-reasoning pre {
+  margin: 0.3rem 0 0;
+  max-height: 12rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+
+.agents-tools {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+}
+
+.agents-tool {
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  font-size: 0.8rem;
+}
+
+.agents-tool summary {
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.agents-tool pre {
+  margin: 0.3rem 0 0;
+  max-height: 10rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agents-compose {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+}
+
+.agents-compose textarea {
+  width: 100%;
+  min-height: 4rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.agents-compose select {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.agents-new {
+  margin-top: 1rem;
+}
+
+.agents-new h3 {
+  margin-top: 0;
+}
+
+.agents-new-grid {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.agents-new-grid > .setting-label,
+.agents-new-grid > .txt,
+.agents-new-grid > textarea,
+.agents-new-grid > select {
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.agents-new-grid textarea {
+  min-height: 5rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.agents-new-grid .agents-number-row {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.agents-new-grid .agents-number-row label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.agents-new-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.agents-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+}
+
+.agents-check input {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--gold);
+}
+
+@media (min-width: 760px) {
+  .agents-layout {
+    grid-template-columns: minmax(15rem, 0.75fr) minmax(24rem, 1.5fr);
+  }
+  .agents-new-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .agents-new-grid .agents-span-2 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  #sheet-agents.agents-active {
+    inset: 8px;
+    width: auto;
+  }
+  .agents-roster,
+  .agents-detail,
+  .agents-new {
+    padding: 0.7rem;
+  }
+  .agents-card strong {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agents *,
+  .agents *::before,
+  .agents *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

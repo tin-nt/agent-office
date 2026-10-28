@@ -512,7 +512,8 @@ def _trusted_observer_origins(values=()) -> frozenset[str]:
     return frozenset(origins)
 
 
-def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handoff=None) -> None:
+def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handoff=None,
+           opencode_agents=None) -> None:
     global _port
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -524,6 +525,8 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
     except ObserverStartupError:
         if task_runner is not None:
             task_runner.shutdown()
+        if opencode_agents is not None:
+            opencode_agents.shutdown()
         raise
 
     class Handler(BaseHTTPRequestHandler):
@@ -533,6 +536,58 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
         def do_GET(self) -> None:
             try:
                 route = self.path.split("?")[0]
+                if route == "/agents" or route.startswith("/agents/"):
+                    if not self._authorize_agent_request(mutation=False):
+                        return
+                    if opencode_agents is None:
+                        if route == "/agents":
+                            self.respond(200, {
+                                "enabled": False,
+                                "token": None,
+                                "connected": False,
+                                "projects": [],
+                                "agents": [],
+                                "models": [],
+                                "bindings": [],
+                                "limits": {
+                                    "max_active_agents": 0,
+                                    "max_bindings": 0,
+                                    "max_prompt_chars": 8192,
+                                    "max_goal_chars": 4000,
+                                    "max_tokens": 100000000,
+                                    "max_turns": 10000,
+                                    "max_duration_s": 604800,
+                                },
+                            })
+                        else:
+                            self.respond(404, {"error": "managed OpenCode agents are disabled"})
+                        return
+                    try:
+                        if route == "/agents":
+                            self.respond(200, opencode_agents.status())
+                            return
+                        if route == "/agents/catalog":
+                            from urllib.parse import parse_qs, urlsplit
+                            query = parse_qs(urlsplit(self.path).query)
+                            project = query.get("project", [None])[0]
+                            refresh = query.get("refresh", ["0"])[0] in ("1", "true", "yes")
+                            self.respond(200, opencode_agents.catalog(project, refresh=refresh))
+                            return
+                        remainder = route[len("/agents/"):]
+                        parts = remainder.split("/")
+                        if len(parts) == 1 and parts[0]:
+                            self.respond(200, opencode_agents.detail(parts[0]))
+                            return
+                        if len(parts) == 2 and parts[0] and parts[1] == "messages":
+                            from urllib.parse import parse_qs, urlsplit
+                            query = parse_qs(urlsplit(self.path).query)
+                            flat = {key: values[-1] for key, values in query.items() if values}
+                            self.respond(200, opencode_agents.messages(parts[0], flat))
+                            return
+                        self.respond(404, {"error": "agent route not found"})
+                    except Exception as exc:
+                        self._respond_agent_error(exc)
+                    return
                 if route == "/opencode-handoff" or route.startswith("/opencode-handoff/"):
                     if not self._authorize_handoff_request(mutation=False):
                         return
@@ -750,6 +805,33 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
                     return False
             return True
 
+        def _authorize_agent_request(self, *, mutation: bool) -> bool:
+            """Enforce the managed OpenCode agent control boundary."""
+            import hmac
+
+            expected_host = f"127.0.0.1:{self.server.server_port}"
+            hosts = self.headers.get_all("Host", failobj=[])
+            if hosts != [expected_host]:
+                self.respond(403, {"error": "managed OpenCode agents require their exact loopback Host"})
+                return False
+            sites = self.headers.get_all("Sec-Fetch-Site", failobj=[])
+            if any(value.strip().lower() == "cross-site" for value in sites):
+                self.respond(403, {"error": "cross-site managed OpenCode agent requests are forbidden"})
+                return False
+            origins = self.headers.get_all("Origin", failobj=[])
+            if len(origins) > 1 or (origins and origins[0] != f"http://{expected_host}"):
+                self.respond(403, {"error": "managed OpenCode agent request origin is not allowed"})
+                return False
+            if mutation:
+                tokens = self.headers.get_all("X-Agent-Office-Token", failobj=[])
+                expected_token = opencode_agents.token if opencode_agents is not None else ""
+                supplied = tokens[0].encode("utf-8") if len(tokens) == 1 else b""
+                expected = expected_token.encode("utf-8")
+                if len(tokens) != 1 or not expected_token or not hmac.compare_digest(supplied, expected):
+                    self.respond(403, {"error": "managed OpenCode agent token is missing or invalid"})
+                    return False
+            return True
+
         def _respond_handoff_error(self, exc: Exception) -> None:
             try:
                 from .opencode_handoff import HandoffError
@@ -759,6 +841,23 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
                 self.respond(exc.status, {"error": exc.message})
             else:
                 raise exc
+
+        def _respond_agent_error(self, exc: Exception) -> None:
+            try:
+                from .opencode_agents import AgentError
+            except ImportError:
+                from opencode_agents import AgentError
+            if isinstance(exc, AgentError):
+                self.respond(exc.status, {"error": exc.message})
+                return
+            try:
+                from .opencode_api import OpenCodeAPIError
+            except ImportError:
+                from opencode_api import OpenCodeAPIError
+            if isinstance(exc, OpenCodeAPIError):
+                self.respond(exc.status, {"error": exc.message})
+                return
+            raise exc
 
         def _authorize_observer_request(self, *, check_site=True) -> bool:
             """Reject DNS rebinding and cross-origin access to local observations."""
@@ -849,6 +948,54 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
 
         def do_POST(self) -> None:
             route = self.path.split("?")[0]
+            if route == "/agents" or route.startswith("/agents/"):
+                if not self._authorize_agent_request(mutation=True):
+                    return
+                payload = self._read_task_json()
+                if payload is None:
+                    return
+                if opencode_agents is None:
+                    self.respond(404, {"error": "managed OpenCode agents are disabled"})
+                    return
+                try:
+                    if route == "/agents":
+                        self.respond(201, opencode_agents.create(payload))
+                        return
+                    if route == "/agents/reconnect":
+                        if payload != {}:
+                            self.respond(400, {"error": "reconnect requires an empty JSON object"})
+                            return
+                        self.respond(200, opencode_agents.reconnect())
+                        return
+                    remainder = route[len("/agents/"):]
+                    parts = remainder.split("/")
+                    if len(parts) != 2 or not parts[0] or not parts[1]:
+                        self.respond(404, {"error": "agent route not found"})
+                        return
+                    binding_id, action = parts
+                    if action == "prompt":
+                        self.respond(200, opencode_agents.prompt(binding_id, payload))
+                    elif action == "goal":
+                        self.respond(200, opencode_agents.goal(binding_id, payload))
+                    elif action == "interrupt":
+                        if payload != {}:
+                            self.respond(400, {"error": "interrupt requires an empty JSON object"})
+                            return
+                        self.respond(200, opencode_agents.interrupt(binding_id))
+                    elif action == "permission":
+                        self.respond(200, opencode_agents.reply_permission(binding_id, payload))
+                    elif action == "form":
+                        self.respond(200, opencode_agents.reply_form(binding_id, payload))
+                    elif action == "unbind":
+                        if payload != {}:
+                            self.respond(400, {"error": "unbind requires an empty JSON object"})
+                            return
+                        self.respond(200, opencode_agents.unbind(binding_id))
+                    else:
+                        self.respond(404, {"error": "agent route not found"})
+                except Exception as exc:
+                    self._respond_agent_error(exc)
+                return
             if route.startswith("/opencode-handoff"):
                 if not self._authorize_handoff_request(mutation=True):
                     return
@@ -1036,8 +1183,10 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
     except OSError as exc:
         if task_runner is not None:
             task_runner.shutdown()
+        if opencode_agents is not None:
+            opencode_agents.shutdown()
             raise TaskRunnerStartupError(
-                f"local task runner could not bind http://127.0.0.1:{_port}: {exc}. "
+                f"managed OpenCode agents could not bind http://127.0.0.1:{_port}: {exc}. "
                 "Stop the existing Agent Office or other listener, or choose an unused --port."
             ) from exc
         # Port already bound. Probe it: a healthy pixel-office answers /state
@@ -1083,6 +1232,8 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
         srv.server_close()
         if task_runner is not None:
             task_runner.shutdown()
+        if opencode_agents is not None:
+            opencode_agents.shutdown()
 
 
 def _probe_port(port: int) -> str:

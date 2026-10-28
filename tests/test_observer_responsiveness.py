@@ -65,7 +65,7 @@ def test_stalled_maintenance_keeps_bootstrap_and_capabilities_responsive(monkeyp
     monkeypatch.setattr(office, 'build_state', blocked_state)
     with running_observer(monkeypatch, release) as (server, _):
         assert entered.wait(3), 'maintenance entered the stalled ingestion'
-        paths = ['/', '/js/office.js', '/js/task-runner.js', '/js/task-desk.js', '/task-runs']
+        paths = ['/', '/js/office.js', '/js/task-runner.js', '/js/agents.js', '/js/task-desk.js', '/task-runs', '/agents']
         with ThreadPoolExecutor(max_workers=len(paths)) as pool:
             replies = list(pool.map(lambda route: get(server, route), paths))
         assert all(status == 200 and body for status, body in replies)
