@@ -2,8 +2,8 @@
 
 Working notes for the next session. The user-facing contract is in
 [opencode-agents.md](opencode-agents.md); this file records what is verified,
-what is still blocked, and the exact next checks. Delete or fold this file into
-the contract once the remaining checks pass.
+what remains, and the exact next checks. Delete or fold this file into the
+contract once the remaining checks pass.
 
 ## State
 
@@ -49,36 +49,36 @@ Behavior that changed during the last pass:
   template correctly.
 - jsdom checks: roster, detail, transcript, tools, conditional forms,
   permissions, composer, new-agent form, goal editor, and the preview guard.
-- Real OpenCode API: session create/delete, custom IDs, direct model turn
-  (`glm-5.3-flash-free` returned `OK`), and the error path. The error E2E
-  confirmed that a provider error followed by `idle` pauses the agent, keeps
-  `turns` at 0, and sends no continuation.
+- Real OpenCode API: session create/delete, custom IDs, direct model turns,
+  and both loop outcomes.
+  - **Success:** `status=complete`, `completion_evidence="replied OK"`, `turns=0`,
+    and `tokens_used=16,882` for a turn reporting 16,870 input + 12 output.
+    The 1,920 cache-read tokens were excluded, matching the documented budget
+    metric.
+  - **Error:** a provider error followed by `idle` pauses the agent, keeps
+    `turns` at 0, and sends no continuation.
+  - The successful loop used the configured `ckey/deepseek-4.1-flash-ckey`
+    provider after the free models exhausted their quota.
 
-## Blocked
+## Remaining
 
-- **Successful real-model loop E2E.** The free OpenCode models return
-  `Free usage limit reached` for the loop's initial prompt after a small number
-  of probe turns. A direct single-turn probe succeeded, so the model/API path is
-  good; the free-tier quota is the blocker. Retried with `flint-40b-free` after
-  the quota appeared to reset; it failed the same way. Re-run when a funded model
-  or fresh free quota is available.
+- **Visual review.** The in-app browser on this machine returned 502 for
+  loopback pages. The panel is covered by jsdom checks, but it still needs a
+  visual pass in a real browser at the printed `http://127.0.0.1:<port>` URL.
 - **Windows loopback resets.** Rapid loopback connections on this machine can
   still produce `WinError 10054` / timeouts. Keep-alive fixes the OpenCode client
   path; unrelated existing tests that open short-lived connections still hit it.
 - **Leftover test directories.** Empty `_agent-office-e2e-*` directories under
-  the configured project root are held by OpenCode's file watcher. They can be
-  deleted after OpenCode restarts. No sessions remain.
+  the configured project root can be held by OpenCode's file watcher until it
+  releases them. No sessions remain.
 
 ## Next checks
 
-1. Run the full loop E2E with an available model and confirm
-   `status=complete`, `completion_evidence` set, and no extra continuation.
-2. Confirm `session.tokens` (and therefore `tokens_used`) increases after a
-   successful turn; the unit tests fake this.
-3. Review the panel visually in a real browser. The in-app browser on this
-   machine returned 502 for loopback pages; use the printed
-   `http://127.0.0.1:<port>` URL.
-4. Remove this handoff file after the real-model success path is confirmed.
+1. Open the panel in a real browser and confirm the roster, transcript, goal
+   editor, forms, and composer layout at desktop and narrow widths.
+2. Run a real-model goal that needs at least two turns, to confirm continuation
+   prompts, turn counting, and `/goal` stop behavior outside the unit tests.
+3. Remove this handoff file after those checks pass.
 
 ## Run
 
