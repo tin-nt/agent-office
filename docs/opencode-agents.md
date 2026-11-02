@@ -130,7 +130,8 @@ sessions themselves are retained. **Unbind** removes only the office binding.
 - **Provider error:** fix the provider, model, or quota, then press **Resume**.
   The loop retries the failed turn instead of pausing on the same error again.
 
-## Development status
+## Tests
 
-Current verification results, known blockers, and next checks are recorded in
-the [implementation handoff](opencode-agents-handoff.md).
+`python -m pytest tests/test_opencode_agents.py` covers validation, bindings,
+budget accounting, stop rules, and the loop boundaries. The panel markup is
+also exercised by the preview build tests and the local browser checks.
