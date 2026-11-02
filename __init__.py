@@ -530,8 +530,18 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
         raise
 
     class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+        disable_nagle_algorithm = True
+
         def log_message(self, *args: Any) -> None:  # silence stdout
             pass
+
+        def _write_body(self, body: bytes) -> None:
+            # Python 3.15 on Windows can stall a single large sendall().
+            # Chunking keeps assets and long transcripts moving.
+            view = memoryview(body)
+            for start in range(0, len(view), 65536):
+                self.wfile.write(view[start:start + 65536])
 
         def do_GET(self) -> None:
             try:
@@ -726,7 +736,7 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
                         self.send_header("Content-Type", "text/plain")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
-                self.wfile.write(body)
+                self._write_body(body)
             except (BrokenPipeError, ConnectionResetError):
                 pass
             except Exception:
@@ -745,7 +755,7 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
             for name, value in (headers or {}).items():
                 self.send_header(name, value)
             self.end_headers()
-            self.wfile.write(body)
+            self._write_body(body)
 
         def _authorize_task_request(self, *, mutation: bool) -> bool:
             """Enforce the task runner's loopback browser boundary."""
@@ -1109,6 +1119,12 @@ def _serve(task_runner=None, on_ready=None, observer_origins=(), opencode_handof
         # Browsers open many asset connections together on a cold load. The
         # small stdlib default drops queued connections on macOS.
         request_queue_size = 128
+
+        def handle_error(self, request, client_address):
+            error = sys.exc_info()[1]
+            if isinstance(error, (BrokenPipeError, ConnectionResetError)):
+                return
+            super().handle_error(request, client_address)
 
         def __init__(self, *args, **kwargs):
             # Initialize before binding: TCPServer may call server_close if

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import tempfile
 import time
 import uuid
@@ -499,3 +500,19 @@ def test_marker_ignores_fenced_code():
     assert _marker("```\nGOAL_COMPLETE: no\n```") is None
     assert _marker("text\nGOAL_COMPLETE: yes")["kind"] == "complete"
     assert _marker("    GOAL_COMPLETE: indented") is None
+
+
+def test_new_agent_budget_default_satisfies_html_validation():
+    """A min/step mismatch silently blocks the whole creation form."""
+    template = (Path(__file__).resolve().parents[1] / "web" / "template.html").read_text(
+        encoding="utf-8"
+    )
+    block = re.search(r'id="agents-new-tokens".*?/>', template, re.S)
+    assert block is not None
+    attrs = dict(re.findall(r'(min|max|step|value)="([0-9]+)"', block.group(0)))
+    minimum = int(attrs["min"])
+    maximum = int(attrs["max"])
+    step = int(attrs["step"])
+    value = int(attrs["value"])
+    assert minimum <= value <= maximum
+    assert (value - minimum) % step == 0

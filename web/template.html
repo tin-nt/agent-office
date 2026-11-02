@@ -608,7 +608,7 @@
       hidden
     >
       <h2>Managed agents</h2>
-      <p class="h">
+      <p class="h" id="agents-intro">
         Opt-in OpenCode control plane. Each managed agent owns one session in
         one allowlisted project. Chat here, answer permissions and forms, or
         let the loop continue until <code>/goal</code>, the token budget, or a
@@ -797,7 +797,7 @@
           <textarea
             id="agents-new-goal"
             class="txt agents-span-2"
-            rows="5"
+            rows="3"
             maxlength="4000"
             spellcheck="true"
             placeholder="Describe the concrete outcome and how the agent should verify it."
@@ -823,7 +823,7 @@
                 type="number"
                 min="1"
                 max="100000000"
-                step="1000"
+                step="1"
                 value="2000000"
               />
             </label>

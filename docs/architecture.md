@@ -366,7 +366,9 @@ The VS Code extension hosts the shared frontend in an iframe. It forwards config
 | GET | `/assets-manifest`, `/user/<name>.svg` | Compatibility inventory and local user SVGs |
 | GET | `/user/aquarium/manifest.json`, `/user/aquarium/<fish-id>.png` | Optional local aquarium pack |
 
-The server binds to `127.0.0.1`. The [shareable preview](preview.md) is a separate demonstration, not a hosted endpoint for a user's local history or runtime controls.
+The server binds to `127.0.0.1`. Responses use HTTP/1.1 keep-alive and bounded
+body writes so large bootstrap assets and long transcript JSON arrive in full.
+The [shareable preview](preview.md) is a separate demonstration, not a hosted endpoint for a user's local history or runtime controls.
 
 ## Diagnostic logs and safe cleanup
 

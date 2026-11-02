@@ -22,6 +22,7 @@
   }
 
   const els = {
+    intro: byId("agents-intro"),
     enable: byId("agents-enable"),
     refresh: byId("agents-refresh"),
     reconnect: byId("agents-reconnect"),
@@ -263,6 +264,7 @@
   }
 
   function renderRoster() {
+    els.intro.hidden = bindings.length > 0;
     const signature = JSON.stringify([
       selectedId,
       bindings.map((binding) => [

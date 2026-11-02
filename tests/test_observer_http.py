@@ -93,6 +93,17 @@ def observer(tmp_path):
         server.close()
 
 
+def test_large_frontend_asset_is_delivered_in_full(observer):
+    """A single sendall() over 64 KiB can stall Python 3.15 on Windows."""
+    path = ROOT / "web" / "js" / "office.js"
+    expected = path.read_bytes()
+    assert len(expected) > 65536
+    status, body, headers = observer.request("GET", "/js/office.js")
+    assert status == 200
+    assert headers["Content-Length"] == str(len(expected))
+    assert body == expected
+
+
 @pytest.mark.parametrize("route", ["/", "/js/scene.js", "/state", "/history", "/settings", "/assets-manifest", "/user/missing.svg"])
 def test_rebound_hostname_cannot_read_observer_data(observer, route):
     host = f"audit.invalid:{observer.port}"
